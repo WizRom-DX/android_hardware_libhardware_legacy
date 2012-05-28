@@ -69,6 +69,8 @@ static int g_error = 1;
 static const char *off_state = "mem";
 static const char *on_state = "on";
 
+static const char *deepsleep_state = "deepsleep";
+
 static int64_t systemTime()
 {
     struct timespec t;
@@ -110,6 +112,29 @@ initialize_fds(void)
         g_initialized = 1;
     }
 }
+
+
+int
+set_deepsleep_state(int on)
+{
+
+    LOGI("***set_deepsleep_state  %d", on);
+
+    initialize_fds();
+
+    if (g_error) return g_error;
+
+    char buf[32];
+    int len;
+
+    len = snprintf(buf, sizeof(buf), "%s", deepsleep_state);
+    len = write(g_fds[REQUEST_STATE], buf, len);
+    if(len < 0) {
+        LOGE("Failed setting last user activity: g_error=%d\n", g_error);
+    }
+    return 0;
+}
+
 
 int
 acquire_wake_lock(int lock, const char* id)
@@ -306,14 +331,11 @@ physical(int state) {
     close(fd_Physical);
     return 0;
 }
-#endif
 
-#ifdef USE_UNSTABLE_MEMORY_STATE
 int
 set_unstable_memory_state(int state) {
     LOGW("UnstableMemory(%d)", state);
 
-#ifdef QCOM_HARDWARE
     if(state == 0) {
         if(logical(0) != 0) {
             return -1;
@@ -332,7 +354,6 @@ set_unstable_memory_state(int state) {
             return -1;
         }
     }
-#endif
     return 0;
 }
 #endif
